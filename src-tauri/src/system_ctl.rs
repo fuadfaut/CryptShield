@@ -67,7 +67,7 @@ pub fn start_service(resolver: String, caching: bool, dnssec: bool) -> Result<St
 
     // Combine all commands: Config -> Service -> ALL NetworkManager connections
     let script = format!(
-        "{} && systemctl start dnscrypt-proxy{}",
+        "{} && systemctl enable --now dnscrypt-proxy{}",
         config_script, nmcli_cmds
     );
 
@@ -97,9 +97,9 @@ pub fn stop_service() -> Result<String, String> {
     }
 
     let script = if connections.is_empty() {
-        "systemctl stop dnscrypt-proxy".to_string()
+        "systemctl disable --now dnscrypt-proxy".to_string()
     } else {
-        format!("systemctl stop dnscrypt-proxy{}", nmcli_cmds)
+        format!("systemctl disable --now dnscrypt-proxy{}", nmcli_cmds)
     };
 
     let output = Command::new("pkexec")

@@ -171,6 +171,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           set((s) => ({ uptime: s.uptime + 1 }));
         }, 1000);
         set({ _intervals: { uptime: uptimeInterval, traffic: get()._intervals.traffic } });
+        await invoke('set_tray_icon', { active: true });
       }
     } catch (e) {
       console.error('Failed to init app state:', e);
