@@ -1,5 +1,4 @@
 import {
-  ShieldCheck,
   SquaresFour,
   Gear,
   TerminalWindow,
