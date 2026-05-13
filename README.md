@@ -11,6 +11,7 @@ Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 - **System-Wide DNS Routing**: Automatically updates NetworkManager (`nmcli`) to route all system traffic through `127.0.0.1` when active.
 - **Tutorial & Diagnostics**: Built-in dependency checker that verifies required packages (`dnscrypt-proxy`, `nmcli`, `pkexec`, `systemctl`) and provides copy-paste install commands if missing.
 - **System Tray & Autostart**: Minimize to tray instead of closing. Optionally auto-launch on system login via the Configuration tab. Dynamic tray icon: colored when protected, dimmed when off.
+- **Single Instance**: Prevents multiple copies of the application from running simultaneously, redirecting focus to the active window instead.
 - **Easy Configuration**: Switch between 10 major resolvers via dropdown — no manual file editing needed.
 - **Advanced Options**: Toggle DNS caching and DNSSEC enforcement with a simple switch.
 - **Real-Time Logs**: View `journalctl` logs natively within the application.
@@ -37,7 +38,7 @@ Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
 ```bash
 # Download the latest RPM from GitHub Releases
-sudo dnf install ./cryptshield-0.1.3-1.x86_64.rpm
+sudo dnf install ./cryptshield-0.1.4-1.x86_64.rpm
 ```
 
 This will automatically install the required dependencies (`dnscrypt-proxy`, `NetworkManager`, `polkit`).
@@ -46,8 +47,8 @@ This will automatically install the required dependencies (`dnscrypt-proxy`, `Ne
 
 ```bash
 # Download the AppImage from GitHub Releases
-chmod +x CryptShield_0.1.3_amd64.AppImage
-./CryptShield_0.1.3_amd64.AppImage
+chmod +x CryptShield_0.1.4_amd64.AppImage
+./CryptShield_0.1.4_amd64.AppImage
 ```
 
 > **Note**: When using AppImage, you must manually install the dependencies first:
@@ -91,7 +92,7 @@ chmod +x CryptShield_0.1.3_amd64.AppImage
 > **Tip**: Enable "Run on Startup" in Configuration to have CryptShield protect your DNS automatically every time you log in.
 
 ---
-**Current Version**: v0.1.3 (Beta)
+**Current Version**: v0.1.4 (Beta)
 
 ## 🏗 Architecture
 

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-05-13
+
+### Added
+- **Single Instance Support**: Added `@tauri-apps/plugin-single-instance` to prevent multiple copies of the application from running concurrently. Launching the application while it's already running in the background will now automatically focus the active window instead of spawning a new daemon.
+
+### Fixed
+- **Autostart DNS Issue**: Changed systemctl internal scripts from `start`/`stop` to `enable --now`/`disable --now`. This fixes a critical bug where restarting the system while CryptShield was active would leave the system without internet access, as NetworkManager routed to `127.0.0.1` but `dnscrypt-proxy` did not start automatically on boot.
+- **Autostart Tray Icon State**: The system tray icon now correctly initializes to the active (green) state on system startup if the backend `dnscrypt-proxy` service is detected to be actively running.
+- **GitHub Actions Release**: Added `permissions: contents: write` to the CI release workflow, resolving the "Resource not accessible by integration" API errors when creating a new release.
+
 ## [0.1.3] - 2026-05-13
 
 ### Added
