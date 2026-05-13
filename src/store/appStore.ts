@@ -69,6 +69,7 @@ interface AppState {
   toggleCaching: () => Promise<void>;
   toggleDnssec: () => Promise<void>;
   toggleAutostart: () => Promise<void>;
+  applyChanges: () => Promise<void>;
   getLatency: () => number;
 }
 
@@ -102,6 +103,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       else if (event.payload.includes('[WARN]')) type = 'warn';
       else if (event.payload.includes('[SUCCESS]') || event.payload.includes('started')) type = 'success';
       get().addLog(event.payload, type);
+    });
+
+    // Listen for real-time DNS traffic from dnscrypt-proxy
+    await listen<string>('traffic-stream', (event) => {
+      const line = event.payload;
+      if (!line || line.trim() === '') return;
+      
+      set((state) => {
+        const isBlocked = line.includes('DROP') || line.includes('REJECT') || line.includes('SYNTH');
+        return {
+          stats: {
+            total: state.stats.total + 1,
+            blocked: state.stats.blocked + (isBlocked ? 1 : 0),
+          }
+        };
+      });
     });
 
     try {
@@ -188,34 +205,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     const state = get();
     const newValue = !state.cachingEnabled;
     set({ cachingEnabled: newValue });
-    try {
-      await invoke('update_option', { key: 'cache', value: newValue });
-      state.addLog(`[CONFIG] Option 'DNS Caching' was set to ${newValue}.`, 'warn');
-      if (state.isRunning) {
-        state.addLog(`[SYSTEM] Restarting service to apply changes...`, 'system');
-        await invoke('restart_service');
-      }
-    } catch (e) {
-      state.addLog(`[ERROR] Failed to update config: ${e}`, 'error');
-      set({ cachingEnabled: !newValue }); // rollback
-    }
+    state.addLog(`[CONFIG] DNS Caching set to ${newValue} (Pending apply)`, 'info');
   },
 
   toggleDnssec: async () => {
     const state = get();
     const newValue = !state.dnssecEnabled;
     set({ dnssecEnabled: newValue });
-    try {
-      await invoke('update_option', { key: 'require_dnssec', value: newValue });
-      state.addLog(`[CONFIG] Option 'DNSSEC' was set to ${newValue}.`, 'warn');
-      if (state.isRunning) {
-        state.addLog(`[SYSTEM] Restarting service to apply changes...`, 'system');
-        await invoke('restart_service');
-      }
-    } catch (e) {
-      state.addLog(`[ERROR] Failed to update config: ${e}`, 'error');
-      set({ dnssecEnabled: !newValue }); // rollback
-    }
+    state.addLog(`[CONFIG] DNSSEC set to ${newValue} (Pending apply)`, 'info');
   },
 
   toggleAutostart: async () => {
@@ -235,6 +232,29 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  applyChanges: async () => {
+    const state = get();
+    if (!state.isRunning) return;
+
+    set({ isStarting: true });
+    state.addLog('[SYSTEM] Polkit: Applying config changes and restarting service...', 'system');
+
+    try {
+      const res = resolversDB[state.currentResolverId];
+      await invoke('restart_service', { 
+        resolver: res.exactName,
+        caching: state.cachingEnabled,
+        dnssec: state.dnssecEnabled
+      });
+      
+      set({ isStarting: false });
+      state.showToast('Settings Applied & Service Restarted');
+    } catch (e) {
+      set({ isStarting: false });
+      state.addLog(`[ERROR] Failed to apply changes: ${e}`, 'error');
+    }
+  },
+
   getLatency: () => {
     const state = get();
     if (!state.isRunning) return 0;
@@ -247,17 +267,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const state = get();
     const res = resolversDB[resolverId];
     set({ currentResolverId: resolverId });
-    state.addLog(`[CONFIG] Switching primary resolver to: ${res.name}`, 'warn');
-
-    try {
-      await invoke('update_resolver', { name: res.exactName });
-      if (state.isRunning) {
-        state.addLog(`[SYSTEM] Restarting dnscrypt-proxy daemon...`, 'system');
-        state.showToast(`Resolver set to ${res.name}`);
-      }
-    } catch (e) {
-      state.addLog(`[ERROR] Failed to change resolver: ${e}`, 'error');
-    }
+    state.addLog(`[CONFIG] Target resolver set to: ${res.name}`, 'info');
   },
 
   toggleService: async () => {
@@ -266,14 +276,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!state.isRunning) {
       // --- STARTING ---
       set({ isStarting: true });
-      state.addLog('[SYSTEM] Polkit: Executing systemctl start dnscrypt-proxy...', 'system');
+      state.addLog('[SYSTEM] Polkit: Applying config and starting service...', 'system');
 
       try {
-        await invoke('toggle_service', { state: true });
+        const res = resolversDB[state.currentResolverId];
+        await invoke('toggle_service', { 
+          state: true,
+          resolver: res.exactName,
+          caching: state.cachingEnabled,
+          dnssec: state.dnssecEnabled
+        });
         
         const currentState = get();
-        const res = resolversDB[currentState.currentResolverId];
-
         set({ isRunning: true, isStarting: false, uptime: 0, stats: { total: 0, blocked: 0 } });
         currentState.showToast('DNSCrypt Service Started');
 
@@ -299,7 +313,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       state.addLog('[SYSTEM] Polkit: Executing systemctl stop dnscrypt-proxy...', 'system');
 
       try {
-        await invoke('toggle_service', { state: false });
+        const res = resolversDB[state.currentResolverId];
+        await invoke('toggle_service', { 
+          state: false,
+          resolver: res.exactName,
+          caching: state.cachingEnabled,
+          dnssec: state.dnssecEnabled 
+        });
         
         // Clean up intervals
         const intervals = get()._intervals;

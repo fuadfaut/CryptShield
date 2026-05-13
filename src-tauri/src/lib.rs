@@ -18,9 +18,14 @@ fn get_service_status() -> Result<String, String> {
 
 // --- Tauri Command: Toggle Service ---
 #[tauri::command]
-fn toggle_service(state: bool) -> Result<String, String> {
+fn toggle_service(
+    state: bool,
+    resolver: String,
+    caching: bool,
+    dnssec: bool,
+) -> Result<String, String> {
     if state {
-        system_ctl::start_service()
+        system_ctl::start_service(resolver, caching, dnssec)
     } else {
         system_ctl::stop_service()
     }
@@ -28,8 +33,8 @@ fn toggle_service(state: bool) -> Result<String, String> {
 
 // --- Tauri Command: Restart Service ---
 #[tauri::command]
-fn restart_service() -> Result<String, String> {
-    system_ctl::restart_service()
+fn restart_service(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
+    system_ctl::restart_service(resolver, caching, dnssec)
 }
 
 // --- Tauri Command: Get Config ---
@@ -52,20 +57,16 @@ fn get_config() -> Result<ConfigResponse, String> {
     })
 }
 
-// --- Tauri Command: Update Resolver ---
+// --- Tauri Command: Update Config ---
 #[tauri::command]
-fn update_resolver(name: String) -> Result<String, String> {
-    config_manager::update_resolver(&name)?;
-    // Restart service to apply changes
-    system_ctl::restart_service()?;
-    Ok(format!("Resolver updated to: {}", name))
-}
-
-// --- Tauri Command: Update Config Option ---
-#[tauri::command]
-fn update_option(key: String, value: bool) -> Result<String, String> {
-    config_manager::update_option(&key, value)?;
-    Ok(format!("Option '{}' set to {}", key, value))
+fn update_config(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
+    // This command is now handled within toggle/restart to minimize prompts.
+    // But we keep it as an explicit option if the user just wants to save without restart.
+    // (Note: it will still trigger a pkexec prompt for the config write)
+    config_manager::update_resolver(&resolver)?;
+    config_manager::update_option("cache", caching)?;
+    config_manager::update_option("require_dnssec", dnssec)?;
+    Ok("Configuration updated".to_string())
 }
 
 // --- Application Entry Point ---
@@ -82,8 +83,7 @@ pub fn run() {
             toggle_service,
             restart_service,
             get_config,
-            update_resolver,
-            update_option,
+            update_config,
         ])
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {

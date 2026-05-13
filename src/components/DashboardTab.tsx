@@ -58,8 +58,8 @@ export default function DashboardTab() {
           {/* Status Glow */}
           <div
             id="status-glow"
-            className={`absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 blur-[80px] rounded-full transition-colors duration-700 ${
-              isRunning ? 'bg-green-500/15' : 'bg-red-500/10'
+            className={`absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 blur-[100px] rounded-full transition-all duration-1000 ${
+              isRunning ? 'bg-[#a6e3a1]/20' : 'bg-[#f38ba8]/10'
             }`}
           />
 
@@ -67,24 +67,24 @@ export default function DashboardTab() {
             {/* Status Icon */}
             <div
               id="status-icon-container"
-              className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 transition-colors duration-500 shadow-inner ${
+              className={`w-28 h-28 rounded-full flex items-center justify-center mb-6 transition-all duration-700 shadow-2xl ${
                 isRunning
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-red-500/20 text-red-400'
+                  ? 'bg-[#a6e3a1]/20 text-[#a6e3a1] shadow-[#a6e3a1]/10'
+                  : 'bg-[#f38ba8]/20 text-[#f38ba8] shadow-[#f38ba8]/10'
               }`}
             >
               {isRunning ? (
-                <ShieldCheck size={48} weight="fill" />
+                <ShieldCheck size={56} weight="fill" />
               ) : (
-                <ShieldWarning size={48} weight="fill" />
+                <ShieldWarning size={56} weight="fill" />
               )}
             </div>
 
             {/* Status Text */}
             <h3
               id="status-text"
-              className={`text-2xl font-bold mb-2 transition-colors ${
-                isRunning ? 'text-green-400 pulse-text' : 'text-white'
+              className={`text-3xl font-black mb-2 transition-colors tracking-tight ${
+                isRunning ? 'text-[#a6e3a1] pulse-text' : 'text-white'
               }`}
             >
               {isRunning ? 'Protected' : 'Unprotected'}
@@ -100,26 +100,26 @@ export default function DashboardTab() {
               id="main-toggle"
               onClick={toggleService}
               disabled={isStarting}
-              className={`relative group w-20 h-10 rounded-full p-1 border transition-colors duration-300 shadow-lg cursor-pointer ${
+              className={`relative group w-24 h-12 rounded-full p-1.5 border-2 transition-all duration-500 shadow-xl cursor-pointer ${
                 isRunning
-                  ? 'bg-green-500 border-green-600'
-                  : 'bg-surface border-gray-600'
+                  ? 'bg-[#a6e3a1] border-[#a6e3a1]/50'
+                  : 'bg-surface border-surface/50'
               }`}
             >
               <div
                 id="toggle-knob"
-                className={`w-8 h-8 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center ${
+                className={`w-8 h-8 rounded-full shadow-lg transform transition-all duration-500 flex items-center justify-center ${
                   isRunning
-                    ? 'translate-x-10 bg-white'
+                    ? 'translate-x-12 bg-white scale-110'
                     : 'translate-x-0 bg-gray-400'
                 }`}
               >
                 {isStarting ? (
-                  <SpinnerGap size={14} className="animate-spin text-panel" />
+                  <SpinnerGap size={18} className="animate-spin text-panel" />
                 ) : isRunning ? (
-                  <Check size={14} weight="bold" className="text-green-500" />
+                  <Check size={18} weight="bold" className="text-[#a6e3a1]" />
                 ) : (
-                  <Power size={14} className="text-panel" />
+                  <Power size={18} className="text-panel" />
                 )}
               </div>
             </button>
@@ -151,14 +151,14 @@ export default function DashboardTab() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-300">Blocked (Ad/Malware)</span>
-                <span id="stat-blocked" className="font-mono text-red-400">
+                <span id="stat-blocked" className="font-mono text-[#f38ba8]">
                   {stats.blocked.toLocaleString()}
                 </span>
               </div>
               <div className="w-full bg-surface rounded-full h-2">
                 <div
                   id="bar-blocked"
-                  className="bg-red-400 h-2 rounded-full transition-all duration-500"
+                  className="bg-[#f38ba8] h-2 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(243,139,168,0.5)]"
                   style={{ width: `${blockPercentage}%` }}
                 />
               </div>
@@ -168,11 +168,11 @@ export default function DashboardTab() {
             <div className="pt-4 border-t border-surface mt-2">
               <p
                 id="stat-status-text"
-                className={`text-xs text-center ${
-                  isRunning ? 'text-green-400 pulse-text' : 'text-gray-500'
+                className={`text-xs text-center font-medium ${
+                  isRunning ? 'text-[#a6e3a1] pulse-text' : 'text-gray-500'
                 }`}
               >
-                {isRunning ? 'Analyzing network packets...' : 'Waiting for service to start...'}
+                {isRunning ? 'Monitoring active queries...' : 'Waiting for service to start...'}
               </p>
             </div>
           </div>

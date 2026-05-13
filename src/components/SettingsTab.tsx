@@ -10,6 +10,9 @@ export default function SettingsTab() {
   const toggleCaching = useAppStore((s) => s.toggleCaching);
   const toggleDnssec = useAppStore((s) => s.toggleDnssec);
   const toggleAutostart = useAppStore((s) => s.toggleAutostart);
+  const isRunning = useAppStore((s) => s.isRunning);
+  const isStarting = useAppStore((s) => s.isStarting);
+  const applyChanges = useAppStore((s) => s.applyChanges);
 
   return (
     <div className="max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-in-out]">
@@ -117,6 +120,29 @@ export default function SettingsTab() {
           </div>
         </div>
       </div>
+
+      {/* Apply Button (Visible only when running) */}
+      {isRunning && (
+        <div className="mt-8 flex justify-center animate-bounce-slow">
+          <button
+            onClick={applyChanges}
+            disabled={isStarting}
+            className="flex items-center px-8 py-3 bg-fedora hover:bg-fedora/90 text-white font-bold rounded-full shadow-lg shadow-fedora/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isStarting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Applying...
+              </>
+            ) : (
+              <>Apply & Restart Service</>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
