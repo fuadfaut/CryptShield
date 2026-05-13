@@ -60,13 +60,38 @@ fn get_config() -> Result<ConfigResponse, String> {
 // --- Tauri Command: Update Config ---
 #[tauri::command]
 fn update_config(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
-    // This command is now handled within toggle/restart to minimize prompts.
-    // But we keep it as an explicit option if the user just wants to save without restart.
-    // (Note: it will still trigger a pkexec prompt for the config write)
     config_manager::update_resolver(&resolver)?;
     config_manager::update_option("cache", caching)?;
     config_manager::update_option("require_dnssec", dnssec)?;
     Ok("Configuration updated".to_string())
+}
+
+// --- Tauri Command: Check Dependencies ---
+#[derive(Serialize)]
+struct DependencyStatus {
+    dnscrypt_proxy: bool,
+    nmcli: bool,
+    systemctl: bool,
+    pkexec: bool,
+}
+
+#[tauri::command]
+fn check_dependencies() -> Result<DependencyStatus, String> {
+    let check = |cmd: &str| -> bool {
+        std::process::Command::new("sh")
+            .arg("-c")
+            .arg(format!("command -v {}", cmd))
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    };
+
+    Ok(DependencyStatus {
+        dnscrypt_proxy: check("dnscrypt-proxy"),
+        nmcli: check("nmcli"),
+        systemctl: check("systemctl"),
+        pkexec: check("pkexec"),
+    })
 }
 
 // --- Application Entry Point ---
@@ -84,6 +109,7 @@ pub fn run() {
             restart_service,
             get_config,
             update_config,
+            check_dependencies,
         ])
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {

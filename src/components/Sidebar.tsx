@@ -3,6 +3,7 @@ import {
   SquaresFour,
   Gear,
   TerminalWindow,
+  BookOpenText,
 } from '@phosphor-icons/react';
 import { useAppStore, type TabId } from '../store/appStore';
 
@@ -21,6 +22,11 @@ const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = [
     id: 'logs',
     label: 'System Logs',
     icon: <TerminalWindow size={20} />,
+  },
+  {
+    id: 'tutorial',
+    label: 'Tutorial & Setup',
+    icon: <BookOpenText size={20} />,
   },
 ];
 

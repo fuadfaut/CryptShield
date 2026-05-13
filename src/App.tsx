@@ -5,6 +5,7 @@ import Header from './components/Header';
 import DashboardTab from './components/DashboardTab';
 import SettingsTab from './components/SettingsTab';
 import LogsTab from './components/LogsTab';
+import TutorialTab from './components/TutorialTab';
 import Toast from './components/Toast';
 import './index.css';
 
@@ -29,6 +30,7 @@ function App() {
           {activeTab === 'dashboard' && <DashboardTab />}
           {activeTab === 'settings' && <SettingsTab />}
           {activeTab === 'logs' && <LogsTab />}
+          {activeTab === 'tutorial' && <TutorialTab />}
         </div>
       </main>
 

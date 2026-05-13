@@ -8,15 +8,19 @@ export interface ResolverInfo {
   name: string;
   type: string;
   baseLatency: number;
-  blockRate: number;
 }
 
 export const resolversDB: Record<string, ResolverInfo & { exactName: string }> = {
-  default: { name: 'Load Balanced (All Servers)', type: 'Mixed', baseLatency: 20, blockRate: 0.0, exactName: '' },
-  cloudflare: { name: 'Cloudflare', type: 'DoH/DNSCrypt', baseLatency: 14, blockRate: 0.01, exactName: 'cloudflare' },
-  quad9: { name: 'Quad9', type: 'DNSCrypt', baseLatency: 38, blockRate: 0.15, exactName: 'quad9-dnscrypt-ip4-filter-pri' },
-  adguard: { name: 'AdGuard DNS', type: 'DoH', baseLatency: 25, blockRate: 0.35, exactName: 'adguard-dns' },
-  nextdns: { name: 'NextDNS', type: 'DoH', baseLatency: 45, blockRate: 0.25, exactName: 'nextdns' },
+  default: { name: 'All Servers (Load Balanced)', exactName: '', type: 'Auto', baseLatency: 10 },
+  cloudflare: { name: 'Cloudflare', exactName: 'cloudflare', type: 'DoH/DNSCrypt', baseLatency: 12 },
+  google: { name: 'Google DNS', exactName: 'google', type: 'DoH/DNSCrypt', baseLatency: 15 },
+  quad9: { name: 'Quad9', exactName: 'quad9', type: 'DoH/DNSCrypt', baseLatency: 20 },
+  adguard: { name: 'AdGuard DNS', exactName: 'adguard', type: 'DoH/DNSCrypt', baseLatency: 25 },
+  nextdns: { name: 'NextDNS', exactName: 'nextdns', type: 'DoH', baseLatency: 30 },
+  cisco: { name: 'Cisco OpenDNS', exactName: 'cisco', type: 'DoH/DNSCrypt', baseLatency: 20 },
+  mullvad: { name: 'Mullvad', exactName: 'mullvad-doh', type: 'DoH', baseLatency: 35 },
+  cleanbrowsing: { name: 'CleanBrowsing', exactName: 'cleanbrowsing-adult', type: 'DoH/DNSCrypt', baseLatency: 25 },
+  tiarapp: { name: 'TiarApp (BebasID)', exactName: 'doh.tiar.app', type: 'DoH', baseLatency: 18 },
 };
 
 // --- Log Entry ---
@@ -28,7 +32,14 @@ export interface LogEntry {
 }
 
 // --- Application State ---
-export type TabId = 'dashboard' | 'settings' | 'logs';
+export type TabId = 'dashboard' | 'settings' | 'logs' | 'tutorial';
+
+export interface DependencyStatus {
+  dnscrypt_proxy: boolean;
+  nmcli: boolean;
+  systemctl: boolean;
+  pkexec: boolean;
+}
 
 interface AppState {
   // Service state
@@ -48,6 +59,7 @@ interface AppState {
   cachingEnabled: boolean;
   dnssecEnabled: boolean;
   autostartEnabled: boolean;
+  deps: DependencyStatus | null;
 
   // Internals
   _isInitialized: boolean;
@@ -70,6 +82,7 @@ interface AppState {
   toggleDnssec: () => Promise<void>;
   toggleAutostart: () => Promise<void>;
   applyChanges: () => Promise<void>;
+  checkDependencies: () => Promise<void>;
   getLatency: () => number;
 }
 
@@ -87,6 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   cachingEnabled: true,
   dnssecEnabled: true,
   autostartEnabled: false,
+  deps: null,
   _isInitialized: false,
   _intervals: { uptime: null, traffic: null },
   _logCounter: 0,
@@ -252,6 +266,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) {
       set({ isStarting: false });
       state.addLog(`[ERROR] Failed to apply changes: ${e}`, 'error');
+    }
+  },
+
+  checkDependencies: async () => {
+    try {
+      const deps: DependencyStatus = await invoke('check_dependencies');
+      set({ deps });
+    } catch (e) {
+      console.error('Failed to check dependencies', e);
     }
   },
 

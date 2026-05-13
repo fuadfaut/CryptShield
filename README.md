@@ -11,6 +11,7 @@ Built with **Tauri v2**, **React 18**, **TypeScript**, and **Tailwind CSS**.
 - **One-Click Protection**: Easily start, stop, or restart the `dnscrypt-proxy` systemd service with automatic `pkexec` (Polkit) privilege escalation.
 - **Live Traffic Monitor**: Real-time visualization of total queries and blocked domains directly parsed from the `dnscrypt-proxy` daemon's query logs.
 - **System-Wide DNS Routing**: Dynamically updates NetworkManager to route all system traffic through `127.0.0.1` when active.
+- **Tutorial & Diagnostics**: Built-in dependency checker that verifies if your system has all required packages (`dnscrypt-proxy`, `nmcli`, `pkexec`, etc.) and provides 1-click install commands if missing.
 - **System Tray & Autostart**: Seamlessly runs in the background. Minimize to tray instead of closing, and optionally set it to launch automatically on system login.
 - **Live Traffic Monitoring**: Visual display of real-time queries, blocked domains (ad/malware), active resolver, average latency, and uptime.
 - **Easy Configuration**: Quickly switch between major resolvers (Cloudflare, Quad9, AdGuard, NextDNS) via a dropdown menu.
@@ -57,7 +58,7 @@ sudo dnf install -y dbus-devel webkit2gtk4.1-devel librsvg2-devel
    ```
 
 ---
-**Current Version**: v0.1.2 (Beta)
+**Current Version**: v0.1.3 (Beta)
 
 ## 🏗 Architecture
 

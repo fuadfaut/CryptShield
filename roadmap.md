@@ -29,7 +29,14 @@
 - [x] Fitur Autostart (Run on system login).
 - [x] Penanganan izin (Capabilities) Tauri v2.
 
-## Phase 6: Packaging & Distribution [IN PROGRESS]
-- [ ] Konfigurasi bundling RPM/AppImage.
-- [ ] Finalisasi aset ikon.
-- [ ] Publikasi rilis perdana (v0.1.1) di GitHub.
+## Phase 6: Packaging & Distribution [COMPLETED]
+- [x] Konfigurasi bundling RPM/AppImage.
+- [x] Finalisasi aset ikon.
+- [x] Publikasi rilis perdana (v0.1.1) di GitHub.
+
+## Phase 7: Quality of Life & Polish [IN PROGRESS]
+- [x] Fitur pengecek dependensi (*Diagnostic Engine*).
+- [x] Tab Tutorial & Setup Guide di dalam aplikasi.
+- [x] Pembaruan daftar *public resolvers* (Google, Mullvad, TiarApp).
+- [ ] Opsi ganti *theme* (Opsional).
+- [ ] Rilis versi Stabil (v1.0.0).
