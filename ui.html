@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptShield - DNSCrypt GUI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    },
+                    colors: {
+                        fedora: '#51a2da',
+                        bgdark: '#1e1e2e',
+                        panel: '#27273a',
+                        surface: '#313244',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #181825;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #45475a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #585b70;
+        }
+
+        .pulse-text {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .5;
+            }
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex antialiased selection:bg-fedora selection:text-white">
+
+    <aside class="w-64 bg-panel border-r border-surface flex flex-col justify-between">
+        <div>
+            <div class="h-20 flex items-center px-6 border-b border-surface">
+                <i class="ph-fill ph-shield-check text-fedora text-3xl mr-3"></i>
+                <h1 class="text-xl font-bold tracking-wide text-white">CryptShield</h1>
+            </div>
+
+            <nav class="p-4 space-y-2 mt-4">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard"
+                    class="nav-btn w-full flex items-center px-4 py-3 bg-surface text-white rounded-lg transition-colors">
+                    <i class="ph ph-squares-four text-xl mr-3"></i>
+                    <span class="font-medium">Dashboard</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings"
+                    class="nav-btn w-full flex items-center px-4 py-3 text-gray-400 hover:bg-surface hover:text-white rounded-lg transition-colors">
+                    <i class="ph ph-gear text-xl mr-3"></i>
+                    <span class="font-medium">Configuration</span>
+                </button>
+                <button onclick="switchTab('logs')" id="nav-logs"
+                    class="nav-btn w-full flex items-center px-4 py-3 text-gray-400 hover:bg-surface hover:text-white rounded-lg transition-colors">
+                    <i class="ph ph-terminal-window text-xl mr-3"></i>
+                    <span class="font-medium">System Logs</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-surface text-sm text-gray-400">
+            <div class="flex items-center justify-between mb-2">
+                <span>Daemon Version:</span>
+                <span class="text-gray-300 font-mono">2.1.5</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span>Systemd:</span>
+                <span id="systemd-status" class="text-red-400 flex items-center"><span
+                        class="w-2 h-2 rounded-full bg-red-400 mr-2"></span>Inactive</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full bg-bgdark relative">
+
+        <header
+            class="h-20 flex items-center justify-between px-8 border-b border-surface w-full bg-bgdark/80 backdrop-blur-sm z-10">
+            <h2 id="page-title" class="text-2xl font-semibold text-white">Dashboard</h2>
+            <div class="flex items-center space-x-4">
+                <div class="px-3 py-1 bg-surface rounded-full text-xs font-mono text-gray-400 border border-gray-600">
+                    localhost:53
+                </div>
+                <button class="p-2 text-gray-400 hover:text-white transition-colors relative">
+                    <i class="ph ph-bell text-xl"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-fedora rounded-full hidden" id="notif-dot"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+
+            <div id="tab-dashboard"
+                class="tab-content active h-full flex flex-col items-center max-w-5xl mx-auto pb-12">
+
+                <div class="w-full flex gap-6 mb-6">
+                    <!-- Main Toggle Card -->
+                    <div
+                        class="bg-panel flex-1 rounded-3xl p-8 flex flex-col items-center justify-center border border-surface shadow-2xl relative overflow-hidden min-h-[320px]">
+                        <div id="status-glow"
+                            class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-red-500/10 blur-[80px] rounded-full transition-colors duration-700">
+                        </div>
+
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div id="status-icon-container"
+                                class="w-24 h-24 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mb-6 transition-colors duration-500 shadow-inner">
+                                <i id="status-icon" class="ph-fill ph-shield-warning text-5xl"></i>
+                            </div>
+                            <h3 id="status-text" class="text-2xl font-bold text-white mb-2 transition-colors">
+                                Unprotected</h3>
+                            <p id="status-desc" class="text-gray-400 text-center mb-8 text-sm">System DNS is bypassing
+                                encryption.</p>
+
+                            <button id="main-toggle" onclick="toggleService()"
+                                class="relative group w-20 h-10 bg-surface rounded-full p-1 border border-gray-600 transition-colors duration-300 shadow-lg">
+                                <div id="toggle-knob"
+                                    class="w-8 h-8 bg-gray-400 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center">
+                                    <i class="ph ph-power text-panel text-sm"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Stats Card -->
+                    <div class="bg-panel w-1/3 rounded-3xl p-6 border border-surface shadow-2xl flex flex-col">
+                        <h4 class="text-gray-400 text-sm font-medium mb-4 uppercase tracking-wider flex items-center">
+                            <i class="ph ph-activity mr-2 text-fedora"></i> Live Traffic
+                        </h4>
+
+                        <div class="flex-1 flex flex-col justify-center space-y-6">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-300">Total Queries</span>
+                                    <span id="stat-total" class="font-mono text-white">0</span>
+                                </div>
+                                <div class="w-full bg-surface rounded-full h-2">
+                                    <div class="bg-blue-400 h-2 rounded-full w-full opacity-50"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-300">Blocked (Ad/Malware)</span>
+                                    <span id="stat-blocked" class="font-mono text-red-400">0</span>
+                                </div>
+                                <div class="w-full bg-surface rounded-full h-2">
+                                    <div id="bar-blocked"
+                                        class="bg-red-400 h-2 rounded-full w-0 transition-all duration-500"></div>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-surface mt-2">
+                                <p class="text-xs text-gray-500 text-center" id="stat-status-text">Waiting for service
+                                    to start...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6 w-full">
+                    <div class="bg-panel rounded-2xl p-5 border border-surface flex items-center shadow-lg">
+                        <div class="p-3 bg-blue-500/20 text-blue-400 rounded-xl mr-4">
+                            <i class="ph ph-globe text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Active Resolver</p>
+                            <p id="metric-resolver" class="text-lg font-semibold text-white truncate w-40">None</p>
+                        </div>
+                    </div>
+                    <div class="bg-panel rounded-2xl p-5 border border-surface flex items-center shadow-lg">
+                        <div class="p-3 bg-purple-500/20 text-purple-400 rounded-xl mr-4">
+                            <i class="ph ph-chart-line-up text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Avg. Latency</p>
+                            <p id="metric-latency" class="text-lg font-semibold text-white font-mono">-- ms</p>
+                        </div>
+                    </div>
+                    <div class="bg-panel rounded-2xl p-5 border border-surface flex items-center shadow-lg">
+                        <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl mr-4">
+                            <i class="ph ph-clock text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Uptime</p>
+                            <p id="metric-uptime" class="text-lg font-semibold text-white font-mono">00:00:00</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="tab-content max-w-4xl mx-auto">
+                <div class="bg-panel rounded-2xl border border-surface overflow-hidden shadow-lg mb-6">
+                    <div class="p-6 border-b border-surface">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="ph ph-server text-fedora mr-2"></i> Resolver Selection
+                        </h3>
+                        <p class="text-sm text-gray-400 mt-1">Select the upstream server. Changes apply immediately to
+                            the simulation.</p>
+                    </div>
+                    <div class="p-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Primary Server List</label>
+                        <select id="resolver-select" onchange="changeResolver()"
+                            class="w-full bg-bgdark border border-surface text-white text-sm rounded-lg focus:ring-fedora focus:border-fedora block p-3 outline-none appearance-none cursor-pointer hover:bg-bgdark/80">
+                            <option value="cloudflare">Cloudflare (DoH/DNSCrypt) - Fast & Privacy Focused</option>
+                            <option value="quad9">Quad9 - Malware Blocking</option>
+                            <option value="adguard">AdGuard DNS - Ad & Tracker Blocking</option>
+                            <option value="nextdns">NextDNS - Custom Configurations</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
+                            style="margin-top: 100px; margin-right: 32px;">
+                            <i class="ph ph-caret-down"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-panel rounded-2xl border border-surface overflow-hidden shadow-lg">
+                    <div class="p-6 border-b border-surface">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="ph ph-sliders-horizontal text-fedora mr-2"></i> Advanced Options
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-white font-medium">DNS Caching</h4>
+                                <p class="text-sm text-gray-400">Improve response times by caching queries locally.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="opt-caching" onchange="triggerSettingLog('DNS Caching')"
+                                    class="sr-only peer" checked>
+                                <div
+                                    class="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fedora">
+                                </div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-surface pt-6">
+                            <div>
+                                <h4 class="text-white font-medium">Require DNSSEC</h4>
+                                <p class="text-sm text-gray-400">Strictly enforce DNSSEC validation for all queries.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="opt-dnssec" onchange="triggerSettingLog('DNSSEC')"
+                                    class="sr-only peer" checked>
+                                <div
+                                    class="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-fedora">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-logs" class="tab-content h-full flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-gray-400 text-sm">Real-time output from <code
+                            class="bg-surface px-2 py-1 rounded text-fedora">journalctl -u dnscrypt-proxy</code></p>
+                    <div class="space-x-2">
+                        <button onclick="clearLogs()"
+                            class="px-4 py-2 bg-surface hover:bg-gray-700 text-white rounded-lg text-sm transition-colors border border-gray-600">
+                            <i class="ph ph-trash mr-1"></i> Clear
+                        </button>
+                        <button onclick="copyLogs()"
+                            class="px-4 py-2 bg-surface hover:bg-gray-700 text-white rounded-lg text-sm transition-colors border border-gray-600">
+                            <i class="ph ph-copy mr-1"></i> Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    class="flex-1 bg-[#11111b] rounded-xl border border-surface p-4 overflow-hidden flex flex-col shadow-inner relative min-h-[400px]">
+                    <div id="log-container"
+                        class="flex-1 overflow-y-auto font-mono text-xs md:text-sm space-y-1 text-gray-300 pb-8 pr-2">
+                        <div class="text-gray-500 italic">Waiting for dnscrypt-proxy service to start...</div>
+                    </div>
+                    <div
+                        class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#11111b] to-transparent pointer-events-none">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="toast"
+        class="fixed bottom-6 right-6 bg-fedora text-white px-6 py-3 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center">
+        <i class="ph ph-info text-xl mr-2"></i>
+        <span id="toast-msg">Success!</span>
+    </div>
+
+    <script>
+        // --- MOCK BACKEND DATA ---
+        const resolversDB = {
+            'cloudflare': { name: 'Cloudflare', type: 'DoH', baseLatency: 14, blockRate: 0.01 },
+            'quad9': { name: 'Quad9', type: 'DNSCrypt', baseLatency: 38, blockRate: 0.15 },
+            'adguard': { name: 'AdGuard DNS', type: 'DoH', baseLatency: 25, blockRate: 0.35 },
+            'nextdns': { name: 'NextDNS', type: 'DoH', baseLatency: 45, blockRate: 0.25 }
+        };
+
+        // --- APPLICATION STATE ---
+        const state = {
+            isRunning: false,
+            currentResolverId: 'cloudflare',
+            uptime: 0,
+            stats: { total: 0, blocked: 0 },
+            intervals: { uptime: null, traffic: null, latency: null }
+        };
+
+        // --- CORE UI FUNCTIONS ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-surface', 'text-white');
+                el.classList.add('text-gray-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            activeNav.classList.remove('text-gray-400');
+            activeNav.classList.add('bg-surface', 'text-white');
+
+            const titles = { 'dashboard': 'Dashboard', 'settings': 'Configuration', 'logs': 'System Logs' };
+            document.getElementById('page-title').innerText = titles[tabId];
+
+            // Clear notif dot if viewing logs
+            if (tabId === 'logs') document.getElementById('notif-dot').classList.add('hidden');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        // --- LOGGING SYSTEM ---
+        function addLogEntry(msg, type = "info") {
+            const container = document.getElementById('log-container');
+            const time = new Date().toISOString().substring(11, 19); // HH:MM:SS
+
+            let colorClass = "text-gray-300";
+            if (type === "error") colorClass = "text-red-400";
+            else if (type === "success") colorClass = "text-green-400";
+            else if (type === "warn") colorClass = "text-yellow-400";
+            else if (type === "system") colorClass = "text-fedora font-bold";
+
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-gray-500">[${time}]</span> <span class="${colorClass}">${msg}</span>`;
+
+            // Remove "waiting" message if exists
+            if (container.innerHTML.includes("Waiting for dnscrypt-proxy")) {
+                container.innerHTML = '';
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+
+            // Show notification dot on bell if not on logs tab
+            if (!document.getElementById('tab-logs').classList.contains('active')) {
+                document.getElementById('notif-dot').classList.remove('hidden');
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '<div class="text-gray-500 italic">Logs cleared.</div>';
+            showToast("Logs cleared");
+        }
+
+        function copyLogs() { showToast("Logs copied to clipboard"); }
+
+        // --- SETTINGS & INTERACTIVITY ---
+        function changeResolver() {
+            const select = document.getElementById('resolver-select');
+            state.currentResolverId = select.value;
+            const res = resolversDB[state.currentResolverId];
+
+            addLogEntry(`[CONFIG] Switching primary resolver to: ${res.name}`, "warn");
+
+            if (state.isRunning) {
+                // Simulate restart to apply resolver
+                addLogEntry(`[SYSTEM] Reloading dnscrypt-proxy daemon...`, "system");
+                setTimeout(() => {
+                    addLogEntry(`[INFO] Connected to ${res.name} via ${res.type}`);
+                    updateDashboardUI(true);
+                }, 800);
+            }
+            showToast(`Resolver set to ${res.name}`);
+        }
+
+        function triggerSettingLog(settingName) {
+            addLogEntry(`[CONFIG] Option '${settingName}' was modified.`, "warn");
+            if (state.isRunning) addLogEntry(`[SYSTEM] Live reload triggered.`, "system");
+        }
+
+        // --- SERVICE SIMULATION (MOCK RUST BACKEND) ---
+        function toggleService() {
+            const toggle = document.getElementById('main-toggle');
+            const knob = document.getElementById('toggle-knob');
+            const btnLabel = document.querySelector('#main-toggle i');
+
+            if (!state.isRunning) {
+                // STARTING
+                btnLabel.className = 'ph ph-spinner-gap animate-spin text-panel';
+                addLogEntry("[SYSTEM] Polkit: Executing systemctl start dnscrypt-proxy...", "system");
+
+                setTimeout(() => {
+                    state.isRunning = true;
+                    updateDashboardUI(true);
+                    startSimulationLoops();
+
+                    const res = resolversDB[state.currentResolverId];
+                    addLogEntry(`[INFO] Source [public-resolvers] loaded`);
+                    addLogEntry(`[INFO] WireGuard & TCP setup initialized`);
+                    addLogEntry(`[SUCCESS] Proxy listening on 127.0.0.1:53`, "success");
+                    addLogEntry(`[INFO] Active Resolver: ${res.name} (${res.type})`);
+
+                    showToast("DNSCrypt Service Started");
+                }, 1200);
+            } else {
+                // STOPPING
+                addLogEntry("[SYSTEM] Polkit: Executing systemctl stop dnscrypt-proxy...", "system");
+                state.isRunning = false;
+                updateDashboardUI(false);
+                stopSimulationLoops();
+                addLogEntry(`[INFO] Proxy stopped listening on 127.0.0.1:53`);
+                addLogEntry(`[SYSTEM] Daemon exited smoothly.`, "system");
+                showToast("Service Stopped");
+            }
+        }
+
+        // --- UI UPDATERS ---
+        function updateDashboardUI(active) {
+            const toggle = document.getElementById('main-toggle');
+            const knob = document.getElementById('toggle-knob');
+            const iconCont = document.getElementById('status-icon-container');
+            const icon = document.getElementById('status-icon');
+            const statusText = document.getElementById('status-text');
+            const statusDesc = document.getElementById('status-desc');
+            const glow = document.getElementById('status-glow');
+            const sysStatus = document.getElementById('systemd-status');
+            const res = resolversDB[state.currentResolverId];
+
+            if (active) {
+                toggle.classList.replace('bg-surface', 'bg-green-500');
+                knob.classList.add('translate-x-10', 'bg-white');
+                knob.classList.remove('bg-gray-400');
+                knob.innerHTML = '<i class="ph ph-check text-green-500 font-bold"></i>';
+
+                iconCont.className = 'w-24 h-24 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mb-6 transition-colors duration-500 shadow-inner';
+                icon.className = 'ph-fill ph-shield-check text-5xl';
+
+                statusText.innerText = "Protected";
+                statusText.className = "text-2xl font-bold text-green-400 mb-2 transition-colors pulse-text";
+                statusDesc.innerText = `Traffic encrypted via ${res.name}.`;
+                glow.className = "absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-green-500/15 blur-[80px] rounded-full transition-colors duration-700";
+
+                sysStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400 mr-2 pulse-text"></span>Active';
+                sysStatus.classList.replace('text-red-400', 'text-green-400');
+
+                document.getElementById('metric-resolver').innerText = res.name;
+                document.getElementById('stat-status-text').innerText = "Analyzing network packets...";
+                document.getElementById('stat-status-text').classList.replace('text-gray-500', 'text-green-400');
+                document.getElementById('stat-status-text').classList.add('pulse-text');
+
+                updateLatency();
+            } else {
+                toggle.classList.replace('bg-green-500', 'bg-surface');
+                knob.classList.remove('translate-x-10', 'bg-white');
+                knob.classList.add('bg-gray-400');
+                knob.innerHTML = '<i class="ph ph-power text-panel text-sm"></i>';
+
+                iconCont.className = 'w-24 h-24 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mb-6 transition-colors duration-500 shadow-inner';
+                icon.className = 'ph-fill ph-shield-warning text-5xl';
+
+                statusText.innerText = "Unprotected";
+                statusText.className = "text-2xl font-bold text-white mb-2 transition-colors";
+                statusDesc.innerText = "System DNS is bypassing encryption.";
+                glow.className = "absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-red-500/10 blur-[80px] rounded-full transition-colors duration-700";
+
+                sysStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400 mr-2"></span>Inactive';
+                sysStatus.classList.replace('text-green-400', 'text-red-400');
+
+                document.getElementById('metric-resolver').innerText = "None";
+                document.getElementById('metric-latency').innerText = "-- ms";
+                document.getElementById('stat-status-text').innerText = "Service is offline.";
+                document.getElementById('stat-status-text').classList.replace('text-green-400', 'text-gray-500');
+                document.getElementById('stat-status-text').classList.remove('pulse-text');
+            }
+        }
+
+        function formatUptime(seconds) {
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function updateLatency() {
+            if (!state.isRunning) return;
+            const base = resolversDB[state.currentResolverId].baseLatency;
+            // Add some random jitter (+/- 5ms)
+            const jitter = Math.floor(Math.random() * 10) - 5;
+            const finalLatency = Math.max(1, base + jitter);
+            document.getElementById('metric-latency').innerText = `${finalLatency} ms`;
+        }
+
+        // --- SIMULATION LOOPS (TRAFFIC & LOGS) ---
+        function startSimulationLoops() {
+            // Uptime Loop
+            state.uptime = 0;
+            state.intervals.uptime = setInterval(() => {
+                state.uptime++;
+                document.getElementById('metric-uptime').innerText = formatUptime(state.uptime);
+            }, 1000);
+
+            // Latency Update Loop (Every 3 seconds)
+            state.intervals.latency = setInterval(updateLatency, 3000);
+
+            // Traffic Data Simulator (Fast Loop)
+            state.intervals.traffic = setInterval(() => {
+                // Simulate bursts of DNS requests
+                if (Math.random() > 0.4) {
+                    const newQueries = Math.floor(Math.random() * 5) + 1;
+                    state.stats.total += newQueries;
+
+                    const res = resolversDB[state.currentResolverId];
+                    // Simulate blocking based on resolver capability
+                    if (Math.random() < res.blockRate) {
+                        state.stats.blocked += 1;
+                        if (Math.random() > 0.8 && state.stats.blocked % 5 === 0) {
+                            addLogEntry(`[FILTER] Blocked query to tracking domain`, "warn");
+                        }
+                    }
+
+                    // Update DOM
+                    document.getElementById('stat-total').innerText = state.stats.total.toLocaleString();
+                    document.getElementById('stat-blocked').innerText = state.stats.blocked.toLocaleString();
+
+                    // Update Blocked Progress Bar relative to total (max visual 30%)
+                    const blockPercentage = Math.min((state.stats.blocked / Math.max(state.stats.total, 1)) * 100 * 3, 100);
+                    document.getElementById('bar-blocked').style.width = `${blockPercentage}%`;
+
+                    // Occasional random log for successful query
+                    if (Math.random() > 0.95) {
+                        const domains = ["api.github.com", "fedora.org", "matrix.org", "rust-lang.org"];
+                        const domain = domains[Math.floor(Math.random() * domains.length)];
+                        addLogEntry(`[CACHE] Served ${domain} from local cache`);
+                    }
+                }
+            }, 800);
+        }
+
+        function stopSimulationLoops() {
+            clearInterval(state.intervals.uptime);
+            clearInterval(state.intervals.latency);
+            clearInterval(state.intervals.traffic);
+            document.getElementById('metric-uptime').innerText = "00:00:00";
+        }
+    </script>
+</body>
+
+</html>
