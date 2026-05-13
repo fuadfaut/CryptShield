@@ -11,27 +11,33 @@ pub fn get_status() -> Result<String, String> {
     Ok(status)
 }
 
-fn get_active_connection() -> Result<String, String> {
+fn get_active_connections() -> Result<Vec<String>, String> {
     let output = Command::new("nmcli")
         .args(["-t", "-f", "NAME,DEVICE", "connection", "show", "--active"])
         .output()
         .map_err(|e| format!("Failed to run nmcli: {}", e))?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
+    let mut connections = Vec::new();
     
     for line in output_str.lines() {
         if !line.ends_with(":lo") && !line.is_empty() {
             if let Some(name) = line.split(':').next() {
-                return Ok(name.to_string());
+                connections.push(name.to_string());
             }
         }
     }
-    Err("No active network connection found via nmcli".to_string())
+    
+    if connections.is_empty() {
+        Err("No active network connection found via nmcli".to_string())
+    } else {
+        Ok(connections)
+    }
 }
 
 /// Start the dnscrypt-proxy service and route system DNS, using a single pkexec prompt
 pub fn start_service(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
-    let conn_name = get_active_connection()?;
+    let connections = get_active_connections()?;
     let config_path = "/etc/dnscrypt-proxy/dnscrypt-proxy.toml";
     
     let cache_val = if caching { "true" } else { "false" };
@@ -50,10 +56,19 @@ pub fn start_service(resolver: String, caching: bool, dnssec: bool) -> Result<St
         )
     };
 
-    // Combine all commands: Config -> Service -> NetworkManager
+    // Build nmcli commands for ALL active connections
+    let mut nmcli_cmds = String::new();
+    for conn in &connections {
+        nmcli_cmds.push_str(&format!(
+            " && nmcli connection modify '{}' ipv4.dns 127.0.0.1 ipv4.ignore-auto-dns yes ipv6.ignore-auto-dns yes && nmcli connection up '{}'",
+            conn, conn
+        ));
+    }
+
+    // Combine all commands: Config -> Service -> ALL NetworkManager connections
     let script = format!(
-        "{} && systemctl start dnscrypt-proxy && nmcli connection modify '{}' ipv4.dns 127.0.0.1 ipv4.ignore-auto-dns yes && nmcli connection up '{}'",
-        config_script, conn_name, conn_name
+        "{} && systemctl start dnscrypt-proxy{}",
+        config_script, nmcli_cmds
     );
 
     let output = Command::new("pkexec")
@@ -71,15 +86,20 @@ pub fn start_service(resolver: String, caching: bool, dnssec: bool) -> Result<St
 
 /// Stop the dnscrypt-proxy service and revert system DNS, using a single pkexec prompt
 pub fn stop_service() -> Result<String, String> {
-    let conn_name = get_active_connection().unwrap_or_default();
+    let connections = get_active_connections().unwrap_or_default();
     
-    let script = if conn_name.is_empty() {
+    let mut nmcli_cmds = String::new();
+    for conn in &connections {
+        nmcli_cmds.push_str(&format!(
+            " && nmcli connection modify '{}' ipv4.ignore-auto-dns no ipv6.ignore-auto-dns no && nmcli connection modify '{}' ipv4.dns '' && nmcli connection up '{}'",
+            conn, conn, conn
+        ));
+    }
+
+    let script = if connections.is_empty() {
         "systemctl stop dnscrypt-proxy".to_string()
     } else {
-        format!(
-            "systemctl stop dnscrypt-proxy && nmcli connection modify '{}' ipv4.ignore-auto-dns no && nmcli connection modify '{}' ipv4.dns '' && nmcli connection up '{}'",
-            conn_name, conn_name, conn_name
-        )
+        format!("systemctl stop dnscrypt-proxy{}", nmcli_cmds)
     };
 
     let output = Command::new("pkexec")
@@ -97,7 +117,7 @@ pub fn stop_service() -> Result<String, String> {
 
 /// Restart the dnscrypt-proxy service using a single pkexec prompt
 pub fn restart_service(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
-    let conn_name = get_active_connection().unwrap_or_default();
+    let connections = get_active_connections().unwrap_or_default();
     let config_path = "/etc/dnscrypt-proxy/dnscrypt-proxy.toml";
 
     let cache_val = if caching { "true" } else { "false" };
@@ -115,12 +135,20 @@ pub fn restart_service(resolver: String, caching: bool, dnssec: bool) -> Result<
         )
     };
 
-    let script = if conn_name.is_empty() {
+    let mut nmcli_cmds = String::new();
+    for conn in &connections {
+        nmcli_cmds.push_str(&format!(
+            " && nmcli connection modify '{}' ipv4.dns 127.0.0.1 ipv4.ignore-auto-dns yes ipv6.ignore-auto-dns yes && nmcli connection up '{}'",
+            conn, conn
+        ));
+    }
+
+    let script = if connections.is_empty() {
         format!("{} && systemctl restart dnscrypt-proxy", config_script)
     } else {
         format!(
-            "{} && systemctl restart dnscrypt-proxy && nmcli connection modify '{}' ipv4.dns 127.0.0.1 ipv4.ignore-auto-dns yes && nmcli connection up '{}'",
-            config_script, conn_name, conn_name
+            "{} && systemctl restart dnscrypt-proxy{}",
+            config_script, nmcli_cmds
         )
     };
 

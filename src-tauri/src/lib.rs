@@ -94,6 +94,22 @@ fn check_dependencies() -> Result<DependencyStatus, String> {
     })
 }
 
+// --- Tauri Command: Set Tray Icon ---
+#[tauri::command]
+fn set_tray_icon(app: tauri::AppHandle, active: bool) {
+    if let Some(tray) = app.tray_by_id("main") {
+        let icon_bytes = if active {
+            include_bytes!("../icons/tray-on.png").to_vec()
+        } else {
+            include_bytes!("../icons/tray-off.png").to_vec()
+        };
+        
+        if let Ok(icon) = tauri::image::Image::from_bytes(&icon_bytes) {
+            let _ = tray.set_icon(Some(icon));
+        }
+    }
+}
+
 // --- Application Entry Point ---
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -110,6 +126,7 @@ pub fn run() {
             get_config,
             update_config,
             check_dependencies,
+            set_tray_icon,
         ])
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
@@ -125,8 +142,11 @@ pub fn run() {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
-            let _tray = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
+            let off_icon_bytes = include_bytes!("../icons/tray-off.png").to_vec();
+            let initial_icon = tauri::image::Image::from_bytes(&off_icon_bytes).unwrap();
+
+            let _tray = TrayIconBuilder::with_id("main")
+                .icon(initial_icon)
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {

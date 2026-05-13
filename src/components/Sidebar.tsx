@@ -40,7 +40,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div>
         <div className="h-20 flex items-center px-6 border-b border-surface">
-          <ShieldCheck size={28} weight="fill" className="text-fedora mr-3" />
+          <img src="/logo.svg" alt="CryptShield" className="w-7 h-7 mr-3" style={{ filter: 'brightness(0) invert(1)' }} />
           <h1 className="text-xl font-bold tracking-wide text-white">CryptShield</h1>
         </div>
 

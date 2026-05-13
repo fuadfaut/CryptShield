@@ -322,12 +322,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({
           _intervals: {
             uptime: uptimeInterval,
-            traffic: null, // removing mock traffic loop as real logs will be coming
+            traffic: null,
           },
         });
-      } catch (e) {
+
+        state.addLog('[SUCCESS] Service started successfully', 'success');
+        
+        await invoke('set_tray_icon', { active: true });
+
+        // Refresh stats/latency after a short delay
+        setTimeout(() => {
+          set({ isRunning: true, isStarting: false, uptime: 0, stats: { total: 0, blocked: 0 } });
+        }, 1000);
+      } catch (e: any) {
         set({ isStarting: false });
-        get().addLog(`[ERROR] Failed to start service: ${e}`, 'error');
+        state.addLog(`[ERROR] Failed to start service: ${e}`, 'error');
       }
 
     } else {
@@ -344,6 +353,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           dnssec: state.dnssecEnabled 
         });
         
+        await invoke('set_tray_icon', { active: false });
+        
         // Clean up intervals
         const intervals = get()._intervals;
         if (intervals.uptime) clearInterval(intervals.uptime);
@@ -353,14 +364,14 @@ export const useAppStore = create<AppState>((set, get) => ({
           isRunning: false,
           isStarting: false,
           uptime: 0,
+          stats: { total: 0, blocked: 0 },
           _intervals: { uptime: null, traffic: null },
         });
 
-        get().addLog('[SYSTEM] Daemon exited smoothly.', 'system');
-        get().showToast('Service Stopped');
-      } catch (e) {
+        state.addLog('[SUCCESS] Service stopped successfully', 'success');
+      } catch (e: any) {
         set({ isStarting: false });
-        get().addLog(`[ERROR] Failed to stop service: ${e}`, 'error');
+        state.addLog(`[ERROR] Failed to stop service: ${e}`, 'error');
       }
     }
   },

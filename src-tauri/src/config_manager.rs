@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Write;
 
 const CONFIG_PATH: &str = "/etc/dnscrypt-proxy/dnscrypt-proxy.toml";
 

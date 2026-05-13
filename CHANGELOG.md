@@ -8,9 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.3] - 2026-05-13
 
 ### Added
-- **Tutorial & Setup Tab**: Added a new UI tab providing a quick start guide.
-- **System Diagnostics**: Built-in dependency checker that verifies `dnscrypt-proxy`, `nmcli`, `systemctl`, and `pkexec` installation status directly from Rust.
-- **Additional Resolvers**: Added Google DNS, Cisco OpenDNS, Mullvad, CleanBrowsing, and TiarApp (BebasID) to the configuration menu.
+- **Tutorial & Setup Tab**: Added a new UI tab providing a quick start guide and dependency checker.
+- **System Diagnostics**: Built-in dependency checker that verifies `dnscrypt-proxy`, `nmcli`, `systemctl`, and `pkexec` installation status directly from Rust, with copy-paste install commands.
+- **Additional Resolvers**: Added Google DNS, Cisco OpenDNS, Mullvad, CleanBrowsing, and TiarApp (BebasID) to the configuration menu (total: 10 resolvers).
+- **Dynamic Tray Icon**: System tray icon now changes between colored (protected) and dimmed gray (unprotected) states in real-time.
+- **Custom Logo**: Replaced default Phosphor icon with custom CryptShield shield logo in sidebar and system tray.
+
+### Changed
+- **README Overhaul**: Complete rewrite with RPM/AppImage/Source installation instructions, supported resolver table with ECS privacy indicators, and quick start guide.
 
 ## [0.1.2] - 2026-05-13
 
