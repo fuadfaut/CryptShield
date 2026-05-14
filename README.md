@@ -4,7 +4,9 @@ CryptShield is a modern, lightweight graphical user interface (GUI) for managing
 
 Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
-![CryptShield Screenshot]( public/CryptShield.png)
+> 🎵 **Vibe Coded** — This entire project was built through vibe coding with AI (Gemini CLI + Claude). From architecture decisions to pixel-perfect UI, every line was crafted collaboratively in a human–AI pair programming session.
+
+![CryptShield Screenshot](public/CryptShield.png)
 
 ## ✨ Features
 
@@ -40,7 +42,7 @@ Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
 ```bash
 # Download the latest RPM from GitHub Releases
-sudo dnf install ./cryptshield-0.1.4-1.x86_64.rpm
+sudo dnf install ./cryptshield-0.1.5-1.x86_64.rpm
 ```
 
 This will automatically install the required dependencies (`dnscrypt-proxy`, `NetworkManager`, `polkit`).
@@ -49,8 +51,8 @@ This will automatically install the required dependencies (`dnscrypt-proxy`, `Ne
 
 ```bash
 # Download the AppImage from GitHub Releases
-chmod +x CryptShield_0.1.4_amd64.AppImage
-./CryptShield_0.1.4_amd64.AppImage
+chmod +x CryptShield_0.1.5_amd64.AppImage
+./CryptShield_0.1.5_amd64.AppImage
 ```
 
 > **Note**: When using AppImage, you must manually install the dependencies first:
@@ -94,7 +96,7 @@ chmod +x CryptShield_0.1.4_amd64.AppImage
 > **Tip**: Enable "Run on Startup" in Configuration to have CryptShield protect your DNS automatically every time you log in.
 
 ---
-**Current Version**: v0.1.4 (Beta)
+**Current Version**: v0.1.5 (Beta)
 
 ## 🏗 Architecture
 
