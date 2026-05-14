@@ -10,7 +10,7 @@ Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
 ## ✨ Features
 
-- **One-Click Protection**: Start, stop, or restart the `dnscrypt-proxy` systemd service with automatic `pkexec` (Polkit) privilege escalation — only **1 password prompt** per action.
+- **One-Click Protection**: Start, stop, or restart the `dnscrypt-proxy` systemd service with automatic Polkit privilege escalation through a restricted CryptShield helper. RPM installs include a Polkit policy that can cache admin authentication for repeated actions.
 - **Live Traffic Monitor**: Real-time visualization of total DNS queries and blocked domains (ad/malware) directly parsed from the daemon's query logs.
 - **System-Wide DNS Routing**: Automatically updates NetworkManager (`nmcli`) to route all system traffic through `127.0.0.1` when active.
 - **Tutorial & Diagnostics**: Built-in dependency checker that verifies required packages (`dnscrypt-proxy`, `nmcli`, `pkexec`, `systemctl`) and provides copy-paste install commands if missing.
@@ -103,6 +103,10 @@ chmod +x CryptShield_0.1.5_amd64.AppImage
 CryptShield is built using a secure, two-tier architecture:
 - **Frontend (UI)**: A responsive single-page application built with React 19 and styled with Tailwind CSS v4. State is managed globally via Zustand.
 - **Core Backend (Rust)**: Handles secure system operations via `std::process::Command` to invoke `systemctl` and `pkexec`, the `toml` crate for safely reading `/etc/dnscrypt-proxy/dnscrypt-proxy.toml`, and the `tokio` asynchronous runtime to stream journal and traffic logs without blocking the UI thread.
+
+### Privilege Model
+
+CryptShield does not run the full GUI as root. System changes are routed through a restricted internal helper mode (`cryptshield --system-helper`) that only accepts whitelisted DNSCrypt actions and resolver IDs. RPM builds install a Polkit action for `/usr/bin/cryptshield` with `auth_admin_keep`, so Linux can cache a successful admin authentication for subsequent connect/disconnect operations. AppImage and development runs may still show a Polkit prompt because they do not install a system-wide policy file.
 
 ## 📄 License
 

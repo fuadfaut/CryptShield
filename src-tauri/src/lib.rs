@@ -10,31 +10,48 @@ use tauri::{
 };
 use tauri_plugin_autostart::MacosLauncher;
 
+pub fn run_system_helper(args: &[String]) -> Result<String, String> {
+    system_ctl::run_system_helper(args)
+}
+
+async fn run_blocking<T, F>(operation: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(operation)
+        .await
+        .map_err(|e| format!("Background task failed: {}", e))?
+}
+
 // --- Tauri Command: Get Service Status ---
 #[tauri::command]
-fn get_service_status() -> Result<String, String> {
-    system_ctl::get_status()
+async fn get_service_status() -> Result<String, String> {
+    run_blocking(system_ctl::get_status).await
 }
 
 // --- Tauri Command: Toggle Service ---
 #[tauri::command]
-fn toggle_service(
+async fn toggle_service(
     state: bool,
     resolver: String,
     caching: bool,
     dnssec: bool,
 ) -> Result<String, String> {
-    if state {
-        system_ctl::start_service(resolver, caching, dnssec)
-    } else {
-        system_ctl::stop_service()
-    }
+    run_blocking(move || {
+        if state {
+            system_ctl::start_service(resolver, caching, dnssec)
+        } else {
+            system_ctl::stop_service()
+        }
+    })
+    .await
 }
 
 // --- Tauri Command: Restart Service ---
 #[tauri::command]
-fn restart_service(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
-    system_ctl::restart_service(resolver, caching, dnssec)
+async fn restart_service(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
+    run_blocking(move || system_ctl::restart_service(resolver, caching, dnssec)).await
 }
 
 // --- Tauri Command: Get Config ---
@@ -47,23 +64,14 @@ struct ConfigResponse {
 }
 
 #[tauri::command]
-fn get_config() -> Result<ConfigResponse, String> {
-    let config = config_manager::read_config()?;
+async fn get_config() -> Result<ConfigResponse, String> {
+    let config = run_blocking(config_manager::read_config).await?;
     Ok(ConfigResponse {
         server_names: config.server_names,
         listen_addresses: config.listen_addresses,
         cache: config.cache,
         require_dnssec: config.require_dnssec,
     })
-}
-
-// --- Tauri Command: Update Config ---
-#[tauri::command]
-fn update_config(resolver: String, caching: bool, dnssec: bool) -> Result<String, String> {
-    config_manager::update_resolver(&resolver)?;
-    config_manager::update_option("cache", caching)?;
-    config_manager::update_option("require_dnssec", dnssec)?;
-    Ok("Configuration updated".to_string())
 }
 
 // --- Tauri Command: Check Dependencies ---
@@ -103,7 +111,7 @@ fn set_tray_icon(app: tauri::AppHandle, active: bool) {
         } else {
             include_bytes!("../icons/tray-off.png").to_vec()
         };
-        
+
         if let Ok(icon) = tauri::image::Image::from_bytes(&icon_bytes) {
             let _ = tray.set_icon(Some(icon));
         }
@@ -130,7 +138,6 @@ pub fn run() {
             toggle_service,
             restart_service,
             get_config,
-            update_config,
             check_dependencies,
             set_tray_icon,
         ])

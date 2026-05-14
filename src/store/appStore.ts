@@ -124,6 +124,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // Listen for real-time DNS traffic from dnscrypt-proxy
     await listen<string>('traffic-stream', (event) => {
+      if (!get().isRunning) return;
+
       const line = event.payload;
       if (!line || line.trim() === '') return;
       
@@ -312,6 +314,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleService: async () => {
     const state = get();
+    if (state.isStarting) return;
 
     if (!state.isRunning) {
       // --- STARTING ---

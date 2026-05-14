@@ -6,7 +6,7 @@ use tokio::process::Command;
 /// Start streaming journalctl logs for dnscrypt-proxy and emit them to the frontend
 pub async fn start_log_stream(app: AppHandle) {
     let app_clone = app.clone();
-    
+
     // Task 1: Journalctl system logs
     tauri::async_runtime::spawn(async move {
         let child = Command::new("journalctl")
@@ -32,9 +32,9 @@ pub async fn start_log_stream(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         // Wait briefly for the daemon to start and create the file if needed
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        
+
         let child = Command::new("tail")
-            .args(["-F", "/var/log/dnscrypt-query.log"])
+            .args(["-n", "0", "-F", "/var/log/dnscrypt-query.log"])
             .stdout(Stdio::piped())
             .kill_on_drop(true)
             .spawn();

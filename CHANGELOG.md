@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-05-14
+
+### Security
+- **Scoped System Helper**: Added a restricted `--system-helper` mode inside the CryptShield binary for DNSCrypt start/stop/restart operations, replacing generic `pkexec bash -c` execution.
+- **Hardened Privileged Commands**: Reworked privileged `pkexec` flows so resolver IDs and NetworkManager connection IDs are passed as structured helper arguments instead of interpolated into command strings.
+- **Resolver Validation**: Added backend-side resolver allowlisting before writing DNSCrypt configuration or restarting the daemon.
+- **Polkit Action Policy**: Added an RPM-packaged Polkit policy for `/usr/bin/cryptshield` using `auth_admin_keep`, allowing Polkit to cache admin authentication for repeated connect/disconnect actions without granting passwordless access to arbitrary shell commands.
+- **Content Security Policy**: Replaced the disabled Tauri CSP with an explicit policy that supports the desktop app and Vite development server.
+
+### Fixed
+- **Connect Responsiveness**: Moved service start/stop/restart operations onto a blocking worker thread so Polkit, systemd, and NetworkManager work no longer freeze the Tauri WebView during connect/disconnect.
+- **NetworkManager Wait Bound**: Added bounded `nmcli connection up` waits to prevent slow connection reactivation from hanging indefinitely.
+- **Traffic Counter Accuracy**: Live DNS traffic tailing now starts from new log entries only, preventing stale query logs from inflating dashboard counters on app launch.
+- **Stopped-State Traffic Guard**: The frontend ignores traffic stream events while the service is not marked as running.
+
 ## [0.1.4] - 2026-05-13
 
 ### Added

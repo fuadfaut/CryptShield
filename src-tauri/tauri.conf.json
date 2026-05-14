@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420"
     }
   },
   "bundle": {
@@ -31,7 +31,10 @@
     "targets": ["appimage", "rpm"],
     "linux": {
       "rpm": {
-        "depends": ["dnscrypt-proxy", "NetworkManager", "polkit"]
+        "depends": ["dnscrypt-proxy", "NetworkManager", "polkit"],
+        "files": {
+          "/usr/share/polkit-1/actions/com.fuadfaut.cryptshield.policy": "polkit/com.fuadfaut.cryptshield.policy"
+        }
       }
     },
     "icon": [

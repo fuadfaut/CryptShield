@@ -11,8 +11,6 @@ pub struct DnsConfig {
     pub require_dnssec: Option<bool>,
 }
 
-use std::process::Command;
-
 /// Read the current dnscrypt-proxy configuration from TOML file
 pub fn read_config() -> Result<DnsConfig, String> {
     let content = fs::read_to_string(CONFIG_PATH)
@@ -51,50 +49,4 @@ pub fn read_config() -> Result<DnsConfig, String> {
         cache,
         require_dnssec,
     })
-}
-
-/// Update the server_names in the dnscrypt-proxy config file using sed via pkexec
-pub fn update_resolver(server_name: &str) -> Result<(), String> {
-    let script = if server_name.is_empty() {
-        format!(
-            "sed -i -E \"s/^[# ]*server_names[ ]*=.*/# server_names = ['cloudflare']/g\" {}",
-            CONFIG_PATH
-        )
-    } else {
-        format!(
-            "sed -i -E \"s/^[# ]*server_names[ ]*=.*/server_names = ['{}']/g\" {}",
-            server_name, CONFIG_PATH
-        )
-    };
-
-    let output = Command::new("pkexec")
-        .args(["bash", "-c", &script])
-        .output()
-        .map_err(|e| format!("Failed to run pkexec: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Permission denied or sed failed: {}", stderr));
-    }
-    Ok(())
-}
-
-/// Update a boolean option in the config (e.g., cache, require_dnssec) using sed via pkexec
-pub fn update_option(key: &str, value: bool) -> Result<(), String> {
-    let val_str = if value { "true" } else { "false" };
-    let script = format!(
-        "sed -i -E \"s/^[# ]*{}[ ]*=.*/{} = {}/g\" {}",
-        key, key, val_str, CONFIG_PATH
-    );
-
-    let output = Command::new("pkexec")
-        .args(["bash", "-c", &script])
-        .output()
-        .map_err(|e| format!("Failed to run pkexec: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Permission denied or sed failed: {}", stderr));
-    }
-    Ok(())
 }
