@@ -4,7 +4,7 @@ CryptShield is a modern, lightweight graphical user interface (GUI) for managing
 
 Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
-> 🎵 **Vibe Coded** — This entire project was built through vibe coding with AI (Gemini CLI + Claude). From architecture decisions to pixel-perfect UI, every line was crafted collaboratively in a human–AI pair programming session.
+> Warning! ⚠️ **Vibe Coded** — This entire project was built through vibe coding with AI (Gemini CLI + Claude). From architecture decisions to pixel-perfect UI, every line was crafted collaboratively in a human–AI pair programming session.
 
 ![CryptShield Screenshot](public/CryptShield.png)
 
