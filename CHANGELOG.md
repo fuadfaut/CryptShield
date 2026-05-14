@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Content Security Policy**: Replaced the disabled Tauri CSP with an explicit policy that supports the desktop app and Vite development server.
 
 ### Fixed
+- **Tray Menu Labels**: Rebuilt the tray context menu with explicit menu labels, separator, title, and tooltip to avoid blank menu rows on installed Linux tray integrations.
+- **Lower Idle Memory**: Log streaming is now lazy. `journalctl` only runs while the System Logs tab is open, and `tail` only runs while DNSCrypt protection is active.
 - **Connect Responsiveness**: Moved service start/stop/restart operations onto a blocking worker thread so Polkit, systemd, and NetworkManager work no longer freeze the Tauri WebView during connect/disconnect.
 - **NetworkManager Wait Bound**: Added bounded `nmcli connection up` waits to prevent slow connection reactivation from hanging indefinitely.
 - **Traffic Counter Accuracy**: Live DNS traffic tailing now starts from new log entries only, preventing stale query logs from inflating dashboard counters on app launch.

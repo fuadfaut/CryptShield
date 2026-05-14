@@ -4,9 +4,9 @@ mod system_ctl;
 
 use serde::{Deserialize, Serialize};
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::MenuBuilder,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
+    AppHandle, Manager, State, WindowEvent,
 };
 use tauri_plugin_autostart::MacosLauncher;
 
@@ -118,10 +118,37 @@ fn set_tray_icon(app: tauri::AppHandle, active: bool) {
     }
 }
 
+#[tauri::command]
+async fn start_journal_stream(
+    app: AppHandle,
+    state: State<'_, log_streamer::LogStreamState>,
+) -> Result<(), String> {
+    log_streamer::start_journal_stream(app, &state).await
+}
+
+#[tauri::command]
+async fn stop_journal_stream(state: State<'_, log_streamer::LogStreamState>) -> Result<(), String> {
+    log_streamer::stop_journal_stream(&state).await
+}
+
+#[tauri::command]
+async fn start_traffic_stream(
+    app: AppHandle,
+    state: State<'_, log_streamer::LogStreamState>,
+) -> Result<(), String> {
+    log_streamer::start_traffic_stream(app, &state).await
+}
+
+#[tauri::command]
+async fn stop_traffic_stream(state: State<'_, log_streamer::LogStreamState>) -> Result<(), String> {
+    log_streamer::stop_traffic_stream(&state).await
+}
+
 // --- Application Entry Point ---
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(log_streamer::LogStreamState::default())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -140,6 +167,10 @@ pub fn run() {
             get_config,
             check_dependencies,
             set_tray_icon,
+            start_journal_stream,
+            stop_journal_stream,
+            start_traffic_stream,
+            stop_traffic_stream,
         ])
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
@@ -151,16 +182,21 @@ pub fn run() {
         })
         .setup(|app| {
             // Setup System Tray
-            let show_i = MenuItem::with_id(app, "show", "Show Dashboard", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+            let menu = MenuBuilder::new(app)
+                .text("show", "Open CryptShield")
+                .separator()
+                .text("quit", "Quit CryptShield")
+                .build()?;
 
             let off_icon_bytes = include_bytes!("../icons/tray-off.png").to_vec();
             let initial_icon = tauri::image::Image::from_bytes(&off_icon_bytes).unwrap();
 
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(initial_icon)
+                .title("CryptShield")
+                .tooltip("CryptShield DNSCrypt")
                 .menu(&menu)
+                .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -188,12 +224,6 @@ pub fn run() {
                     _ => {}
                 })
                 .build(app)?;
-
-            // Start log streaming in background
-            let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                log_streamer::start_log_stream(app_handle).await;
-            });
 
             // Handle start minimized
             let cli_args: Vec<String> = std::env::args().collect();

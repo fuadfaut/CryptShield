@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { Trash, Copy } from '@phosphor-icons/react';
 import { useAppStore } from '../store/appStore';
 
@@ -7,6 +8,16 @@ export default function LogsTab() {
   const clearLogs = useAppStore((s) => s.clearLogs);
   const showToast = useAppStore((s) => s.showToast);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    invoke('start_journal_stream').catch((e) => {
+      showToast(`Failed to start log stream: ${e}`);
+    });
+
+    return () => {
+      invoke('stop_journal_stream').catch(() => undefined);
+    };
+  }, [showToast]);
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {

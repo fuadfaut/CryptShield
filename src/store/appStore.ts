@@ -184,6 +184,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         }, 1000);
         set({ _intervals: { uptime: uptimeInterval, traffic: get()._intervals.traffic } });
         await invoke('set_tray_icon', { active: true });
+        await invoke('start_traffic_stream');
       }
     } catch (e) {
       console.error('Failed to init app state:', e);
@@ -279,6 +280,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         caching: state.cachingEnabled,
         dnssec: state.dnssecEnabled
       });
+      await invoke('start_traffic_stream');
       
       set({ isStarting: false });
       state.showToast('Settings Applied & Service Restarted');
@@ -349,6 +351,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         state.addLog('[SUCCESS] Service started successfully', 'success');
         
         await invoke('set_tray_icon', { active: true });
+        await invoke('start_traffic_stream');
 
         // Refresh stats/latency after a short delay
         setTimeout(() => {
@@ -374,6 +377,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
         
         await invoke('set_tray_icon', { active: false });
+        await invoke('stop_traffic_stream');
         
         // Clean up intervals
         const intervals = get()._intervals;
