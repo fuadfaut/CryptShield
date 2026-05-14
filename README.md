@@ -4,6 +4,8 @@ CryptShield is a modern, lightweight graphical user interface (GUI) for managing
 
 Built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
+![CryptShield Screenshot]( public/CryptShield.png)
+
 ## ✨ Features
 
 - **One-Click Protection**: Start, stop, or restart the `dnscrypt-proxy` systemd service with automatic `pkexec` (Polkit) privilege escalation — only **1 password prompt** per action.

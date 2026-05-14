@@ -1,0 +1,7 @@
+[build]
+# Limit parallel compilation jobs to save RAM on CI
+jobs = 2
+
+[env]
+# Reduce LLVM memory usage
+CARGO_PROFILE_RELEASE_LTO = "thin"

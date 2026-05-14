@@ -26,6 +26,7 @@
     }
   },
   "bundle": {
+    "license": "MIT",
     "active": true,
     "targets": ["appimage", "rpm"],
     "linux": {

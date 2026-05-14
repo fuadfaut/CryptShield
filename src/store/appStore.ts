@@ -119,20 +119,30 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().addLog(event.payload, type);
     });
 
+    let statsAccumulator = { total: 0, blocked: 0 };
+    let statsTimeout: ReturnType<typeof setTimeout> | null = null;
+
     // Listen for real-time DNS traffic from dnscrypt-proxy
     await listen<string>('traffic-stream', (event) => {
       const line = event.payload;
       if (!line || line.trim() === '') return;
       
-      set((state) => {
-        const isBlocked = line.includes('DROP') || line.includes('REJECT') || line.includes('SYNTH');
-        return {
-          stats: {
-            total: state.stats.total + 1,
-            blocked: state.stats.blocked + (isBlocked ? 1 : 0),
-          }
-        };
-      });
+      const isBlocked = line.includes('DROP') || line.includes('REJECT') || line.includes('SYNTH');
+      statsAccumulator.total += 1;
+      if (isBlocked) statsAccumulator.blocked += 1;
+
+      if (!statsTimeout) {
+        statsTimeout = setTimeout(() => {
+          set((state) => ({
+            stats: {
+              total: state.stats.total + statsAccumulator.total,
+              blocked: state.stats.blocked + statsAccumulator.blocked,
+            }
+          }));
+          statsAccumulator = { total: 0, blocked: 0 };
+          statsTimeout = null;
+        }, 1000);
+      }
     });
 
     try {
@@ -195,8 +205,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       message,
       type,
     };
+    // Limit to 200 logs to prevent memory leaks and DOM sluggishness
+    const newLogs = [...state.logs, newLog];
+    if (newLogs.length > 200) {
+      newLogs.shift();
+    }
+    
     set({
-      logs: [...state.logs, newLog],
+      logs: newLogs,
       _logCounter: state._logCounter + 1,
       hasNewLogs: state.activeTab !== 'logs',
     });

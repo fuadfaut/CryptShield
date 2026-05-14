@@ -13,6 +13,7 @@ pub async fn start_log_stream(app: AppHandle) {
             .args(["-u", "dnscrypt-proxy", "-f", "--no-pager", "-n", "50"])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .kill_on_drop(true)
             .spawn();
 
         if let Ok(mut child) = child {
@@ -35,6 +36,7 @@ pub async fn start_log_stream(app: AppHandle) {
         let child = Command::new("tail")
             .args(["-F", "/var/log/dnscrypt-query.log"])
             .stdout(Stdio::piped())
+            .kill_on_drop(true)
             .spawn();
 
         if let Ok(mut child) = child {
